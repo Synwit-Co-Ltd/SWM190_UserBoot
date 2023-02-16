@@ -1,0 +1,36 @@
+2021/03/18
+SWM190_UserBoot\APP\jumpApp.c 中：
+*((volatile uint32_t *)0x40000500) = 0x02;          // 关闭 Cache
+FLASH_Read(0x0000, (uint32_t *)0x0000, 0x8000);
+修正为：
+*((volatile uint32_t *)0x40000500) = 0x01;          // 关闭 Cache
+FLASH_Read(0x0000, (uint32_t *)0x0000, 0x8000/4);
+
+SWM190_UserBoot\CSL\CMSIS\DeviceSupport\startup\arm\startup_SWM190.s 中：
+                DCD    0x0B11FFAC                 ; Reserved
+                DCD    8                          ; 32k
+                DCD    0x00016000                 ; 88k
+修正为：
+                DCD    0x0B11FFAC                 ; Reserved
+                DCD    0x8000                     ; 32k
+                DCD    0x00016000                 ; 88k
+
+2021/03/29
+SWM190_App\CSL\CMSIS\DeviceSupport\startup\arm\startup_SWM190.s 中：
+                DCD    0                          ; Reserved
+                DCD    0                          ; Reserved
+                DCD    MEM_CONFIG
+修正为：
+                DCD    0x0B11FFAC                 ; Reserved
+                DCD    0x8000                     ; 32k
+                DCD    MEM_CONFIG
+
+2022/09/26
+将工程升级到 Keil5 
+
+SWM190_UserBoot\APP\jumpApp.c 中：
+FLASH_Read(0x0000, (uint32_t *)0x0000, 0x8000/4);
+修改为：
+for(i = 0; i < 0x8000/4; i++)
+    ((uint32_t *)0x0000)[i] = *((volatile unsigned int *)(0x41000000+0x0000+i*4));
+因为这句是将代码从SPI Flash拷贝到CodeRAM中，修改前FLASH_Read()本身就在CodeRAM中，读取会覆盖FLASH_Read()本身导致后续读取无法执行
